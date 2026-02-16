@@ -125,11 +125,14 @@ For a dedicated display with no desktop or console visible, use kiosk mode. This
 
 ```bash
 ./install.sh --kiosk
+sudo reboot
 ```
 
-Then set boot to console and reboot (see step 1 below).
+The install script sets Console Autologin automatically.
 
 ### 1. Boot to console (no desktop)
+
+The install script runs `raspi-config nonint do_boot_behaviour B2` to set this. If you need to do it manually:
 
 ```bash
 sudo raspi-config

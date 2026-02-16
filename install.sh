@@ -39,6 +39,9 @@ if [ "$KIOSK_MODE" = true ]; then
     sudo systemctl disable pi-videoplayer 2>/dev/null || true
     sudo apt-get install -y xserver-xorg xinit x11-xserver-utils
 
+    # Set Console Autologin (required: boot to console, not desktop)
+    sudo raspi-config nonint do_boot_behaviour B2
+
     # Create ~/.xinitrc
     cat > "$USER_HOME/.xinitrc" << XINITRC_EOF
 #!/bin/sh
@@ -68,9 +71,8 @@ PROFILE_EOF
     fi
 
     echo ""
-    echo "Kiosk mode installed. Next steps:"
-    echo "  1. Set boot to console: sudo raspi-config → System Options → Boot / Auto Login → Console Autologin"
-    echo "  2. Reboot: sudo reboot"
+    echo "Kiosk mode installed. Console Autologin has been set."
+    echo "Reboot to apply: sudo reboot"
     echo ""
 else
     echo "Installing systemd service..."
