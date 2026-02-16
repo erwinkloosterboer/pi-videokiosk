@@ -1,0 +1,3 @@
+# Place success.mp3 and error.mp3 here.
+# success.mp3 - plays when a video is scanned successfully and is about to play (right before download)
+# error.mp3   - plays when rate limit is met or any other error occurs
