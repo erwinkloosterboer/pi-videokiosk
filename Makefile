@@ -12,4 +12,4 @@ install:
 	pip install pytest ruff
 
 run:
-	python -m src
+	$(if $(wildcard venv/bin/python),venv/bin/python -m src,python3 -m src)

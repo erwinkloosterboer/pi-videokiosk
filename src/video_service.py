@@ -75,12 +75,21 @@ def _mpv_ipc_send(sock_path: str, command: list) -> Optional[dict]:
         sock.connect(sock_path)
         msg = json.dumps({"command": command}) + "\n"
         sock.sendall(msg.encode())
-        data = sock.recv(4096).decode()
-        sock.close()
-        if data:
-            return json.loads(data)
-    except (socket.error, json.JSONDecodeError) as e:
-        logger.debug("mpv IPC error: %s", e)
+        # mpv sends newline-terminated JSON; read line by line (may receive events first)
+        with sock:
+            f = sock.makefile()
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    resp = json.loads(line)
+                    if "error" in resp:
+                        return resp
+                except json.JSONDecodeError:
+                    continue
+    except (socket.error, json.JSONDecodeError, OSError) as e:
+        logger.warning("mpv IPC error on %s: %s", sock_path, e)
     return None
 
 
@@ -95,16 +104,23 @@ def _mpv_ipc_wait_idle(sock_path: str, timeout: float = 3600) -> bool:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             sock.settimeout(2.0)
             sock.connect(sock_path)
-            # get_property idle-active: true when idle
             msg = json.dumps({"command": ["get_property", "idle-active"]}) + "\n"
             sock.sendall(msg.encode())
-            data = sock.recv(4096).decode()
-            sock.close()
-            if data:
-                resp = json.loads(data)
-                if resp.get("data") is True:
-                    return True
-        except Exception:
+            with sock:
+                f = sock.makefile()
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        resp = json.loads(line)
+                        if "error" in resp and resp.get("data") is True:
+                            return True
+                        if "error" in resp:
+                            break
+                    except json.JSONDecodeError:
+                        continue
+        except (socket.error, OSError):
             pass
         time.sleep(0.5)
     return False
