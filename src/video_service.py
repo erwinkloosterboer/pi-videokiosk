@@ -28,6 +28,8 @@ def load_idle_screen(
     path_str = str(path.resolve())
 
     for sock in sockets:
+        # Set duration before load so image stays indefinitely (prevents idle loop)
+        _mpv_ipc_send(sock, ["set_property", "image-display-duration", 2147483647])
         resp = _mpv_ipc_send(sock, ["loadfile", path_str, "replace"])
         if resp is None or resp.get("error") != "success":
             return False

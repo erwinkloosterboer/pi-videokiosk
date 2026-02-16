@@ -117,6 +117,71 @@ pi-videoplayer/
 └── install.sh
 ```
 
+## Kiosk Setup
+
+For a dedicated display with no desktop or console visible, use kiosk mode. This replaces the desktop entirely with just the video player.
+
+**Quick install:**
+
+```bash
+./install.sh --kiosk
+```
+
+Then set boot to console and reboot (see step 1 below).
+
+### 1. Boot to console (no desktop)
+
+```bash
+sudo raspi-config
+# System Options → Boot / Auto Login → Console Autologin
+```
+
+### 2. Install X server (minimal)
+
+```bash
+sudo apt-get install xserver-xorg xinit x11-xserver-utils
+```
+
+### 3. Create ~/.xinitrc
+
+Replace the desktop with only the video player:
+
+```bash
+#!/bin/sh
+# Disable screen blanking
+xset s off
+xset -dpms
+xset s noblank
+
+# Run the video player (fullscreen, no other UI)
+# Adjust path if you installed elsewhere (e.g. /opt/pi-videokiosk)
+exec $HOME/pi-videokiosk/venv/bin/python -m src
+```
+
+```bash
+chmod +x ~/.xinitrc
+```
+
+### 4. Auto-start X on login
+
+Add to `~/.bashrc` (for the autologin user):
+
+```bash
+if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+  exec startx
+fi
+```
+
+### 5. Reboot
+
+```bash
+sudo reboot
+```
+
+The Pi will boot to console, autologin to your user, then start X with only the video player. No desktop, no taskbar, no console visible.
+
+If you need to access the console for maintenance, press `Ctrl+Alt+F2` (or F3–F6) to switch to another TTY, then `Ctrl+Alt+F1` to return.
+
 ## Troubleshooting
 
 **Service shows "inactive (dead)" after boot**

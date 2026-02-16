@@ -124,15 +124,17 @@ def main() -> int:
     osd_thread.start()
 
     def run_idle_screen_reloader():
-        """Reload idle screen when playback ends."""
-        was_playing = False
+        """Reload idle screen when video playback ends (not when idle image is showing)."""
+        last_was_video = False  # Track if we were playing a video (not the idle image)
         while True:
             time.sleep(2)
             try:
                 idle = _mpv_is_idle(mpv_socket)
-                if was_playing and idle:
+                if last_was_video and idle:
                     load_idle_screen(ipc_sockets=mpv_sockets)
-                was_playing = not idle
+                    last_was_video = False
+                elif not idle:
+                    last_was_video = True  # Not idle = playing something (video or idle image)
             except Exception:
                 pass
 
