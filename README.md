@@ -117,6 +117,16 @@ pi-videoplayer/
 └── install.sh
 ```
 
+## Troubleshooting
+
+**Black screen doesn't appear; desktop keeps showing**
+
+The service needs X11 access. The install script sets `XAUTHORITY` in the systemd unit. If it still fails:
+
+- Check logs: `journalctl -u pi-videoplayer -f`
+- If you see "cannot open display" or "Authorization required", try running manually first: `DISPLAY=:0 XAUTHORITY=/home/pi/.Xauthority ./venv/bin/python -m src` (adjust path if your user is not `pi`). If that works, the service file may need the correct `XAUTHORITY` path.
+- On Wayland (newer Pi OS), X11 apps may not work; use an X11 session if available.
+
 ## Scanner Setup
 
 Most USB barcode/QR scanners emulate a keyboard. The app auto-detects keyboard-like devices. If you have multiple, set `scanner_device_path` in the web settings to the correct `/dev/input/eventX` device.

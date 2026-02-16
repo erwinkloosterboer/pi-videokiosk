@@ -22,6 +22,8 @@ pip install -r requirements.txt
 pip install -U yt-dlp
 
 echo "Installing systemd service..."
+INSTALL_USER=$(whoami)
+USER_HOME=$(getent passwd "$INSTALL_USER" | cut -d: -f6)
 sudo tee /etc/systemd/system/pi-videoplayer.service > /dev/null << EOF
 [Unit]
 Description=Pi Kids Video Player
@@ -29,10 +31,11 @@ After=network.target graphical.target
 
 [Service]
 Type=simple
-User=$(whoami)
+User=$INSTALL_USER
 WorkingDirectory=$SCRIPT_DIR
 Environment=PATH=$SCRIPT_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin
 Environment=DISPLAY=:0
+Environment=XAUTHORITY=$USER_HOME/.Xauthority
 ExecStart=$SCRIPT_DIR/venv/bin/python -m src
 Restart=on-failure
 RestartSec=5
