@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install dependencies and set up the Pi Kids Video Player on Raspberry Pi OS
+# Install dependencies and set up the Pi Video Player on Raspberry Pi OS
 
 set -e
 
@@ -26,7 +26,7 @@ INSTALL_USER=$(whoami)
 USER_HOME=$(getent passwd "$INSTALL_USER" | cut -d: -f6)
 sudo tee /etc/systemd/system/pi-videoplayer.service > /dev/null << EOF
 [Unit]
-Description=Pi Kids Video Player
+Description=Pi Video Player
 After=network.target graphical.target
 
 [Service]

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pi Kids Video Player - Install/Update bootstrap
+# Pi Video Player - Install/Update bootstrap
 # Run with: curl -fsSL https://raw.githubusercontent.com/erwinkloosterboer/pi-videokiosk/main/bootstrap.sh | bash
 # Or for a specific directory: curl -fsSL ... | INSTALL_DIR=/opt/pi-videokiosk bash
 
@@ -8,7 +8,7 @@ set -e
 REPO_URL="https://github.com/erwinkloosterboer/pi-videokiosk.git"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/pi-videokiosk}"
 
-echo "Pi Kids Video Player - Install/Update"
+echo "Pi Video Player - Install/Update"
 echo "Target: $INSTALL_DIR"
 echo ""
 

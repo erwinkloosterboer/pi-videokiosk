@@ -1,6 +1,6 @@
-# Pi Kids Video Player
+# Pi Video Player
 
-A distraction-free Raspberry Pi video player for children. Scan a QR code (containing a YouTube URL) with a USB barcode scanner to watch a single video. When idle, only a black screen is shown.
+A distraction-free Raspberry Pi video player. Scan a QR code (containing a YouTube URL) with a USB barcode scanner to watch a single video. When idle, only a black screen is shown.
 
 ## Features
 

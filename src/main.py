@@ -60,9 +60,8 @@ def _process_scan(url: str, db_path, mpv_sockets: list[str]) -> None:
 
     debug_add(f"Playing: {path.name}")
     logger.info("Playing: %s", path.name)
-    if play_video_with_mpv(path, ipc_sockets=mpv_sockets):
+    if play_video_with_mpv(path, ipc_sockets=mpv_sockets, wait=False):
         record_view(parsed.video_id, parsed.platform, parsed.original_url)
-        debug_add("Playback complete")
     else:
         logger.warning("Playback failed for %s", path.name)
         debug_add("Error: Playback failed")
@@ -128,11 +127,17 @@ def main() -> int:
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
 
-    # Main loop: process scanned URLs
+    # Main loop: process scanned URLs (replace mode: drain queue, only process most recent)
     logger.info("Ready. Scan a QR code to play a video.")
     while True:
         try:
             url = scan_queue.get(timeout=1.0)
+            # Drain queue so we only process the most recent scan (replace, don't queue)
+            while True:
+                try:
+                    url = scan_queue.get_nowait()
+                except Empty:
+                    break
         except Empty:
             # Check if any mpv died
             if any(p.poll() is not None for p in mpv_procs):

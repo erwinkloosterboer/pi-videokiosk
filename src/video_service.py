@@ -130,13 +130,15 @@ def play_video_with_mpv(
     video_path: Path,
     ipc_socket: str = MPV_IDLE_SOCKET,
     ipc_sockets: Optional[list[str]] = None,
+    wait: bool = True,
 ) -> bool:
     """
     Tell mpv (already running with --idle) to load and play the video.
-    Blocks until playback finishes.
+    Uses "replace" mode so any currently playing video is replaced.
 
     Use ipc_socket for single display, or ipc_sockets for multi-HDMI (sends to all).
-    Returns True if playback completed, False on error.
+    If wait=True, blocks until playback finishes. If wait=False, returns after sending loadfile.
+    Returns True if loadfile succeeded, False on error.
     """
     sockets = ipc_sockets if ipc_sockets else [ipc_socket]
     path_str = str(video_path.resolve())
@@ -150,8 +152,9 @@ def play_video_with_mpv(
             logger.warning("mpv loadfile error on %s: %s", sock, resp.get("error", "unknown"))
             return False
 
-    # Wait for playback to finish on all (use first socket for polling)
-    return _mpv_ipc_wait_idle(sockets[0])
+    if wait:
+        return _mpv_ipc_wait_idle(sockets[0])
+    return True
 
 
 def start_mpv_idle(

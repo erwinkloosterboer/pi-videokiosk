@@ -1,1 +1,1 @@
-# Pi Kids Video Player
+# Pi Video Player

@@ -26,7 +26,7 @@ DASHBOARD_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Kids Video Player - Dashboard</title>
+    <title>Video Player - Dashboard</title>
     <style>
         body { font-family: system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
         h1 { font-size: 1.5rem; }
@@ -42,7 +42,7 @@ DASHBOARD_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>Kids Video Player</h1>
+    <h1>Video Player</h1>
     <div class="card">
         <h2>Status</h2>
         {% if request.args.get('queued') %}
@@ -96,7 +96,7 @@ SETTINGS_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Kids Video Player - Settings</title>
+    <title>Video Player - Settings</title>
     <style>
         body { font-family: system-ui, sans-serif; max-width: 500px; margin: 2rem auto; padding: 0 1rem; }
         h1 { font-size: 1.5rem; }
