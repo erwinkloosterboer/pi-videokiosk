@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import signal
 import sys
+import time
 from queue import Empty, Queue
 
 from .audio import play_error, play_success
@@ -16,7 +17,9 @@ from .scanner_listener import start_scanner_listener_thread
 from .url_parser import parse_video_url
 from .video_service import (
     MPV_IDLE_SOCKET,
+    _mpv_is_idle,
     download_video,
+    load_idle_screen,
     play_video_with_mpv,
     start_mpv_idle,
 )
@@ -101,6 +104,10 @@ def main() -> int:
     mpv_procs, mpv_sockets = mpv_result
     mpv_socket = mpv_sockets[0]  # Primary socket for playback
 
+    # Load idle screen (black + play icon) immediately
+    time.sleep(0.5)  # Let mpv finish initializing
+    load_idle_screen(ipc_sockets=mpv_sockets)
+
     # Start scanner listener
     scanner_thread, _ = start_scanner_listener_thread(
         callback=lambda url: None,  # We use the queue instead
@@ -115,6 +122,22 @@ def main() -> int:
         daemon=True,
     )
     osd_thread.start()
+
+    def run_idle_screen_reloader():
+        """Reload idle screen when playback ends."""
+        was_playing = False
+        while True:
+            time.sleep(2)
+            try:
+                idle = _mpv_is_idle(mpv_socket)
+                if was_playing and idle:
+                    load_idle_screen(ipc_sockets=mpv_sockets)
+                was_playing = not idle
+            except Exception:
+                pass
+
+    idle_thread = threading.Thread(target=run_idle_screen_reloader, daemon=True)
+    idle_thread.start()
 
     def shutdown(signum=None, frame=None):
         logger.info("Shutting down...")

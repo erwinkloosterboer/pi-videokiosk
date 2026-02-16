@@ -15,6 +15,24 @@ from .config import DEFAULT_CACHE_DIR
 
 logger = logging.getLogger(__name__)
 
+
+def load_idle_screen(
+    ipc_sockets: Optional[list[str]] = None,
+    ipc_socket: Optional[str] = None,
+) -> bool:
+    """Load the idle screen (black + play icon) into mpv. Returns True on success."""
+    from .idle_screen import get_idle_image_path
+
+    sockets = ipc_sockets if ipc_sockets else [ipc_socket or MPV_IDLE_SOCKET]
+    path = get_idle_image_path()
+    path_str = str(path.resolve())
+
+    for sock in sockets:
+        resp = _mpv_ipc_send(sock, ["loadfile", path_str, "replace"])
+        if resp is None or resp.get("error") != "success":
+            return False
+    return True
+
 # Format for Pi 4: 720p max for performance
 YT_DLP_FORMAT = "best[height<=720]/best"
 MPV_IDLE_SOCKET = "/tmp/pi-videoplayer-mpv.sock"
@@ -91,6 +109,15 @@ def _mpv_ipc_send(sock_path: str, command: list) -> Optional[dict]:
     except (socket.error, json.JSONDecodeError, OSError) as e:
         logger.warning("mpv IPC error on %s: %s", sock_path, e)
     return None
+
+
+def _mpv_is_idle(sock_path: str) -> bool:
+    """Check if mpv is currently idle (no playback)."""
+    try:
+        resp = _mpv_ipc_send(sock_path, ["get_property", "idle-active"])
+        return resp is not None and resp.get("data") is True
+    except Exception:
+        return False
 
 
 def _mpv_ipc_wait_idle(sock_path: str, timeout: float = 3600) -> bool:
@@ -191,6 +218,8 @@ def start_mpv_idle(
                 "--no-osc",
                 "--no-input-default-bindings",
                 "--fs",
+                "--ontop",
+                "--no-border",
                 "--vo=drm",
                 f"--drm-connector={conn}",
                 f"--input-ipc-server={sock}",
@@ -239,6 +268,8 @@ def start_mpv_idle(
             "--no-osc",
             "--no-input-default-bindings",
             "--fs",
+            "--ontop",
+            "--no-border",
             f"--input-ipc-server={ipc_socket}",
             "--osd-align-y=bottom",
             "--osd-font-size=18",
