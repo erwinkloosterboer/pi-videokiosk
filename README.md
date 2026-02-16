@@ -119,9 +119,9 @@ pi-videoplayer/
 
 ## Troubleshooting
 
-**Service shows "inactive (dead)" after boot**
+**App doesn't start after boot**
 
-The service waits 15 seconds for the display to be ready. If it still doesn't start, check logs: `journalctl -u pi-videoplayer -b` (logs from current boot). Try starting manually: `sudo systemctl start pi-videoplayer` — if that works, the issue is boot timing; consider increasing the delay in the service file.
+The install uses **desktop autostart** (~/.config/autostart/), which runs when you log in to the desktop. Ensure autologin is enabled (Raspberry Pi OS default). Start manually: `./venv/bin/python -m src`.
 
 **Black screen doesn't appear; desktop keeps showing**
 
