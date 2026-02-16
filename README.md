@@ -25,6 +25,22 @@ sudo apt-get install python3-venv python3-pip ffmpeg mpv
 
 ## Installation
 
+### Quick install (curl)
+
+Install or update with a single command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/erwinkloosterboer/pi-videokiosk/main/bootstrap.sh | bash
+```
+
+Installs to `~/pi-videokiosk` by default. Override with:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/erwinkloosterboer/pi-videokiosk/main/bootstrap.sh | INSTALL_DIR=/opt/pi-videokiosk bash
+```
+
+### Manual install
+
 ```bash
 # Clone or copy the project, then:
 python3 -m venv venv
@@ -50,7 +66,10 @@ python -m src
 Then:
 
 1. Open the web interface at `http://<pi-ip>:8080` to configure settings
-2. Scan a QR code containing a YouTube URL with the USB scanner
+2. Play a video by:
+   - **Scanning** a QR code containing a YouTube URL with the USB scanner
+   - **Pasting** a YouTube URL into the "Play Video" field on the dashboard
+   - **Direct URL**: `http://<pi-ip>:8080/directplay/<youtube-url>` (URL-encode the video URL, e.g. `http://<pi-ip>:8080/directplay/https%3A%2F%2Fyoutube.com%2Fwatch%3Fv%3DVIDEOID`)
 3. The video downloads (if not cached) and plays fullscreen
 4. When finished, the screen returns to black
 
@@ -62,8 +81,9 @@ Place `success.mp3` and `error.mp3` in the `sounds/` directory:
 
 ## Web Interface
 
-- **Dashboard** (`/`): Current settings, recent views
+- **Dashboard** (`/`): Play video (paste URL), current settings, recent views
 - **Settings** (`/settings`): Edit max videos per period, period hours, scanner device path, web port, debug mode
+- **Direct play** (`/directplay/<url>`): Queue a video by URL path, e.g. `http://mgmt.local:8080/directplay/https%3A%2F%2Fyoutube.com%2Fwatch%3Fv%3DVIDEOID`
 
 ## Configuration
 

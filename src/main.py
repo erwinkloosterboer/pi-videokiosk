@@ -73,13 +73,19 @@ def main() -> int:
     """Run the video player service."""
     config = load_config()
     db_path = get_db_path()
+    scan_queue: Queue = Queue()
 
     # Start web server in background
     import threading
 
     web_thread = threading.Thread(
         target=run_web_server,
-        kwargs={"host": "0.0.0.0", "port": config.web_port, "db_path": db_path},
+        kwargs={
+            "host": "0.0.0.0",
+            "port": config.web_port,
+            "db_path": db_path,
+            "scan_queue": scan_queue,
+        },
         daemon=True,
     )
     web_thread.start()
@@ -92,7 +98,6 @@ def main() -> int:
         return 1
 
     # Start scanner listener
-    scan_queue: Queue = Queue()
     scanner_thread, _ = start_scanner_listener_thread(
         callback=lambda url: None,  # We use the queue instead
         device_path=config.scanner_device_path,

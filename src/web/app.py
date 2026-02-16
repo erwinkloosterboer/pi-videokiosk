@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from queue import Queue
 from typing import Optional
+from urllib.parse import unquote
 
 from flask import Flask, redirect, render_template_string, request, url_for
 
@@ -43,7 +45,19 @@ DASHBOARD_TEMPLATE = """
     <h1>Kids Video Player</h1>
     <div class="card">
         <h2>Status</h2>
+        {% if request.args.get('queued') %}
+        <p class="status">Video queued for playback.</p>
+        {% else %}
         <p class="status">Running</p>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h2>Play Video</h2>
+        <form method="post" action="{{ url_for('play') }}" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <input type="url" name="url" placeholder="Paste YouTube URL..." required
+                style="flex: 1; min-width: 200px; padding: 0.5rem;">
+            <button type="submit" class="btn">Play</button>
+        </form>
     </div>
     <div class="card">
         <h2>Current Settings</h2>
@@ -125,9 +139,20 @@ def _format_timestamp(ts: float) -> str:
     return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
 
 
-def create_app(config_path: Optional[Path] = None) -> Flask:
+def create_app(
+    config_path: Optional[Path] = None,
+    scan_queue: Optional[Queue] = None,
+) -> Flask:
     """Create and configure the Flask app."""
     app = Flask(__name__)
+    app.secret_key = "pi-videokiosk-secret"  # Fixed key for local kiosk use
+
+    def _queue_url(url: str) -> bool:
+        """Queue a URL for playback. Returns True if queued."""
+        if not scan_queue or not url or not url.strip():
+            return False
+        scan_queue.put(url.strip())
+        return True
 
     @app.route("/")
     def dashboard():
@@ -159,6 +184,27 @@ def create_app(config_path: Optional[Path] = None) -> Flask:
                 logger.warning("Invalid settings: %s", e)
         return render_template_string(SETTINGS_TEMPLATE, config=config)
 
+    @app.route("/play", methods=["POST"])
+    def play():
+        """Queue a video URL from the paste form."""
+        url = request.form.get("url", "").strip()
+        if url and _queue_url(url):
+            return redirect(url_for("dashboard", queued=1))
+        return redirect(url_for("dashboard"))
+
+    @app.route("/directplay/<path:video_url>")
+    def directplay(video_url: str):
+        """Queue a video from URL path.
+        E.g. /directplay/https%3A%2F%2Fyoutube.com%2Fwatch%3Fv%3DVIDEOID
+        Or:  /directplay/http://youtube.com/watch?v=VIDEOID (query string preserved)
+        """
+        decoded = unquote(video_url)
+        if request.query_string:
+            decoded = decoded + "?" + request.query_string.decode()
+        if _queue_url(decoded):
+            return "<!DOCTYPE html><html><body><p>Video queued for playback.</p></body></html>", 200
+        return "<!DOCTYPE html><html><body><p>Invalid or missing URL.</p></body></html>", 400
+
     return app
 
 
@@ -166,10 +212,11 @@ def run_web_server(
     host: str = "0.0.0.0",
     port: Optional[int] = None,
     db_path: Optional[Path] = None,
+    scan_queue: Optional[Queue] = None,
 ) -> None:
     """Run the Flask development server."""
     path = db_path or get_db_path()
     config = load_config(path)
     port = port or config.web_port
-    app = create_app(path)
+    app = create_app(config_path=path, scan_queue=scan_queue)
     app.run(host=host, port=port, threaded=True, use_reloader=False)
