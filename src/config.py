@@ -16,6 +16,7 @@ DEFAULT_MAX_VIDEOS = 3
 DEFAULT_PERIOD_HOURS = 24.0
 DEFAULT_WEB_PORT = 8080
 DEFAULT_DEBUG_MODE = False
+DEFAULT_DISPLAY_CONNECTORS = ""  # Empty = default display; comma-separated for multi-HDMI e.g. "0.HDMI-A-1,1.HDMI-A-2"
 
 
 @dataclass
@@ -27,6 +28,7 @@ class AppConfig:
     scanner_device_path: Optional[str]
     web_port: int
     debug_mode: bool
+    display_connectors: str  # Comma-separated DRM connectors for multi-HDMI, empty = default
 
     @classmethod
     def defaults(cls) -> AppConfig:
@@ -36,6 +38,7 @@ class AppConfig:
             scanner_device_path=None,
             web_port=DEFAULT_WEB_PORT,
             debug_mode=DEFAULT_DEBUG_MODE,
+            display_connectors=DEFAULT_DISPLAY_CONNECTORS,
         )
 
 
@@ -71,6 +74,7 @@ def _config_to_dict(config: AppConfig) -> dict[str, str]:
         "scanner_device_path": config.scanner_device_path or "",
         "web_port": str(config.web_port),
         "debug_mode": "true" if config.debug_mode else "false",
+        "display_connectors": config.display_connectors or "",
     }
 
 
@@ -81,6 +85,7 @@ def _dict_to_config(d: dict[str, str]) -> AppConfig:
         scanner_device_path=d.get("scanner_device_path") or None,
         web_port=int(d.get("web_port", DEFAULT_WEB_PORT)),
         debug_mode=d.get("debug_mode", "false").lower() in ("true", "1", "yes"),
+        display_connectors=d.get("display_connectors", DEFAULT_DISPLAY_CONNECTORS) or "",
     )
 
 

@@ -32,15 +32,17 @@ Type=simple
 User=$(whoami)
 WorkingDirectory=$SCRIPT_DIR
 Environment=PATH=$SCRIPT_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=DISPLAY=:0
 ExecStart=$SCRIPT_DIR/venv/bin/python -m src
 Restart=on-failure
 RestartSec=5
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
 EOF
 
-echo "To enable autostart on boot: sudo systemctl enable pi-videoplayer"
+echo "Enabling autostart on boot..."
+sudo systemctl enable pi-videoplayer
 echo "To start now: sudo systemctl start pi-videoplayer"
 echo "To view logs: journalctl -u pi-videoplayer -f"
 echo ""

@@ -64,6 +64,7 @@ DASHBOARD_TEMPLATE = """
         <p><strong>Max videos per period:</strong> {{ config.max_videos }}</p>
         <p><strong>Period (hours):</strong> {{ config.period_hours }}</p>
         <p><strong>Scanner device:</strong> {{ config.scanner_device_path or 'Auto-detect' }}</p>
+        <p><strong>Display connectors:</strong> {{ config.display_connectors or 'Default (single)' }}</p>
         <p><strong>Web port:</strong> {{ config.web_port }}</p>
         <p><strong>Debug mode:</strong> {{ 'On' if config.debug_mode else 'Off' }}</p>
         <a href="{{ url_for('settings') }}" class="btn">Edit Settings</a>
@@ -119,6 +120,9 @@ SETTINGS_TEMPLATE = """
         <label for="scanner_device_path">Scanner device path (optional, e.g. /dev/input/event0)</label>
         <input type="text" id="scanner_device_path" name="scanner_device_path"
             value="{{ config.scanner_device_path or '' }}" placeholder="Leave empty for auto-detect">
+        <label for="display_connectors">Display connectors for multi-HDMI (optional, comma-separated)</label>
+        <input type="text" id="display_connectors" name="display_connectors"
+            value="{{ config.display_connectors or '' }}" placeholder="Leave empty for default display">
         <label for="web_port">Web interface port</label>
         <input type="number" id="web_port" name="web_port" value="{{ config.web_port }}" min="1024" max="65535">
         <label>
@@ -177,6 +181,7 @@ def create_app(
                     scanner_device_path=request.form.get("scanner_device_path") or None,
                     web_port=int(request.form.get("web_port", config.web_port)),
                     debug_mode=request.form.get("debug_mode") == "1",
+                    display_connectors=request.form.get("display_connectors") or "",
                 )
                 save_config(config, config_path)
                 return redirect(url_for("dashboard"))

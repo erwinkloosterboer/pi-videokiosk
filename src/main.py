@@ -30,7 +30,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _process_scan(url: str, db_path) -> None:
+def _process_scan(url: str, db_path, mpv_sockets: list[str]) -> None:
     """Handle a scanned URL: parse, rate limit, download, play, record."""
     debug_add(f"Scanned: {url[:60]}...")
 
@@ -60,7 +60,7 @@ def _process_scan(url: str, db_path) -> None:
 
     debug_add(f"Playing: {path.name}")
     logger.info("Playing: %s", path.name)
-    if play_video_with_mpv(path, MPV_IDLE_SOCKET):
+    if play_video_with_mpv(path, ipc_sockets=mpv_sockets):
         record_view(parsed.video_id, parsed.platform, parsed.original_url)
         debug_add("Playback complete")
     else:
@@ -91,11 +91,16 @@ def main() -> int:
     web_thread.start()
     logger.info("Web interface at http://0.0.0.0:%d", config.web_port)
 
-    # Start mpv in idle mode (black screen)
-    mpv_proc = start_mpv_idle(MPV_IDLE_SOCKET)
-    if not mpv_proc:
+    # Start mpv in idle mode (black screen); supports multi-HDMI via display_connectors
+    connectors = (
+        [c.strip() for c in config.display_connectors.split(",") if c.strip()] if config.display_connectors else None
+    )
+    mpv_result = start_mpv_idle(MPV_IDLE_SOCKET, display_connectors=connectors)
+    if not mpv_result:
         logger.error("Failed to start mpv. Exiting.")
         return 1
+    mpv_procs, mpv_sockets = mpv_result
+    mpv_socket = mpv_sockets[0]  # Primary socket for playback
 
     # Start scanner listener
     scanner_thread, _ = start_scanner_listener_thread(
@@ -107,16 +112,17 @@ def main() -> int:
     # Start OSD updater for debug mode
     osd_thread = threading.Thread(
         target=run_osd_updater,
-        args=(MPV_IDLE_SOCKET, db_path),
+        args=(mpv_socket, db_path),
         daemon=True,
     )
     osd_thread.start()
 
     def shutdown(signum=None, frame=None):
         logger.info("Shutting down...")
-        if mpv_proc:
-            mpv_proc.terminate()
-            mpv_proc.wait(timeout=5)
+        for proc in mpv_procs:
+            proc.terminate()
+        for proc in mpv_procs:
+            proc.wait(timeout=5)
         sys.exit(0)
 
     signal.signal(signal.SIGINT, shutdown)
@@ -128,13 +134,13 @@ def main() -> int:
         try:
             url = scan_queue.get(timeout=1.0)
         except Empty:
-            # Check if mpv died
-            if mpv_proc.poll() is not None:
+            # Check if any mpv died
+            if any(p.poll() is not None for p in mpv_procs):
                 logger.error("mpv exited unexpectedly")
                 return 1
             continue
 
-        _process_scan(url, db_path)
+        _process_scan(url, db_path, mpv_sockets)
 
 
 if __name__ == "__main__":

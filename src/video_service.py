@@ -113,68 +113,136 @@ def _mpv_ipc_wait_idle(sock_path: str, timeout: float = 3600) -> bool:
 def play_video_with_mpv(
     video_path: Path,
     ipc_socket: str = MPV_IDLE_SOCKET,
+    ipc_sockets: Optional[list[str]] = None,
 ) -> bool:
     """
     Tell mpv (already running with --idle) to load and play the video.
     Blocks until playback finishes.
 
+    Use ipc_socket for single display, or ipc_sockets for multi-HDMI (sends to all).
     Returns True if playback completed, False on error.
     """
+    sockets = ipc_sockets if ipc_sockets else [ipc_socket]
     path_str = str(video_path.resolve())
-    resp = _mpv_ipc_send(ipc_socket, ["loadfile", path_str, "replace"])
-    if resp is None:
-        logger.warning("Could not send loadfile to mpv")
-        return False
-    if "error" in resp:
-        logger.warning("mpv loadfile error: %s", resp.get("error"))
-        return False
 
-    # Wait for playback to finish (mpv goes back to idle)
-    return _mpv_ipc_wait_idle(ipc_socket)
+    for sock in sockets:
+        resp = _mpv_ipc_send(sock, ["loadfile", path_str, "replace"])
+        if resp is None:
+            logger.warning("Could not send loadfile to mpv on %s", sock)
+            return False
+        if "error" in resp:
+            logger.warning("mpv loadfile error on %s: %s", sock, resp.get("error"))
+            return False
+
+    # Wait for playback to finish on all (use first socket for polling)
+    return _mpv_ipc_wait_idle(sockets[0])
 
 
-def start_mpv_idle(ipc_socket: str = MPV_IDLE_SOCKET) -> Optional[subprocess.Popen]:
+def start_mpv_idle(
+    ipc_socket: str = MPV_IDLE_SOCKET,
+    display_connectors: Optional[list[str]] = None,
+) -> Optional[tuple[list[subprocess.Popen], list[str]]]:
     """
     Start mpv in idle mode (black screen) with IPC server.
 
-    Returns the Popen instance, or None on failure.
+    When display_connectors is set (e.g. ["0.HDMI-A-1", "1.HDMI-A-2"]), starts one mpv
+    per connector for multi-HDMI support. Otherwise uses default display.
+
+    Returns (list of Popen, list of socket paths), or None on failure.
     """
-    # Remove stale socket
-    if os.path.exists(ipc_socket):
+    connectors = display_connectors or []
+    sockets: list[str] = []
+    procs: list[subprocess.Popen] = []
+
+    if connectors:
+        # Multi-HDMI: one mpv per connector
+        for i, conn in enumerate(connectors):
+            conn = conn.strip()
+            if not conn:
+                continue
+            sock = f"{ipc_socket.rsplit('.', 1)[0]}-{i}.sock" if "." in ipc_socket else f"{ipc_socket}-{i}"
+            if os.path.exists(sock):
+                try:
+                    os.unlink(sock)
+                except OSError:
+                    pass
+            cmd = [
+                "mpv",
+                "--idle=yes",
+                "--no-osc",
+                "--no-input-default-bindings",
+                "--fs",
+                "--vo=drm",
+                f"--drm-connector={conn}",
+                f"--input-ipc-server={sock}",
+                "--osd-align-y=bottom",
+                "--osd-font-size=18",
+            ]
+            try:
+                proc = subprocess.Popen(
+                    cmd,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                )
+                for _ in range(50):
+                    if os.path.exists(sock):
+                        procs.append(proc)
+                        sockets.append(sock)
+                        break
+                    time.sleep(0.1)
+                else:
+                    proc.terminate()
+                    logger.error("mpv did not create IPC socket for %s in time", conn)
+                    for p in procs:
+                        p.terminate()
+                    return None
+            except FileNotFoundError:
+                logger.error("mpv not found. Install with: apt install mpv")
+                for p in procs:
+                    p.terminate()
+                return None
+            except Exception as e:
+                logger.exception("Failed to start mpv for %s: %s", conn, e)
+                for p in procs:
+                    p.terminate()
+                return None
+    else:
+        # Single display: default behavior
+        if os.path.exists(ipc_socket):
+            try:
+                os.unlink(ipc_socket)
+            except OSError:
+                pass
+        cmd = [
+            "mpv",
+            "--idle=yes",
+            "--no-osc",
+            "--no-input-default-bindings",
+            "--fs",
+            f"--input-ipc-server={ipc_socket}",
+            "--osd-align-y=bottom",
+            "--osd-font-size=18",
+        ]
         try:
-            os.unlink(ipc_socket)
-        except OSError:
-            pass
+            proc = subprocess.Popen(
+                cmd,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            for _ in range(50):
+                if os.path.exists(ipc_socket):
+                    return ([proc], [ipc_socket])
+                time.sleep(0.1)
+            proc.terminate()
+            logger.error("mpv did not create IPC socket in time")
+            return None
+        except FileNotFoundError:
+            logger.error("mpv not found. Install with: apt install mpv")
+            return None
+        except Exception as e:
+            logger.exception("Failed to start mpv: %s", e)
+            return None
 
-    cmd = [
-        "mpv",
-        "--idle=yes",
-        "--no-osc",
-        "--no-input-default-bindings",
-        "--fs",
-        f"--input-ipc-server={ipc_socket}",
-        "--osd-align-y=bottom",
-        "--osd-font-size=18",
-    ]
-
-    try:
-        proc = subprocess.Popen(
-            cmd,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-        )
-        # Wait for socket to appear
-        for _ in range(50):
-            if os.path.exists(ipc_socket):
-                return proc
-            time.sleep(0.1)
-        proc.terminate()
-        logger.error("mpv did not create IPC socket in time")
-        return None
-    except FileNotFoundError:
-        logger.error("mpv not found. Install with: apt install mpv")
-        return None
-    except Exception as e:
-        logger.exception("Failed to start mpv: %s", e)
-        return None
+    return (procs, sockets) if procs and sockets else None

@@ -15,7 +15,7 @@ A distraction-free Raspberry Pi video player for children. Scan a QR code (conta
 - Raspberry Pi 4 or 5 (recommended)
 - Raspberry Pi OS
 - USB barcode/QR scanner (HID keyboard emulation)
-- Display connected via HDMI
+- Display(s) connected via HDMI (supports multiple; configure display connectors in settings)
 
 ## System Dependencies
 
@@ -92,6 +92,7 @@ Place `success.mp3` and `error.mp3` in the `sounds/` directory:
 | max_videos | 3 | Maximum videos allowed per period |
 | period_hours | 24 | Time period in hours |
 | scanner_device_path | (auto) | Optional path like `/dev/input/event0` |
+| display_connectors | (default) | Comma-separated DRM connectors for multi-HDMI, e.g. `0.HDMI-A-1,1.HDMI-A-2`. Run `mpv --drm-connector help` to list. |
 | web_port | 8080 | HTTP management interface port |
 | debug_mode | false | Show debug log at bottom of screen (max 10 lines, small font) |
 
@@ -132,4 +133,4 @@ Downloading videos from YouTube may violate YouTube's Terms of Service. Use at y
 
 ## License
 
-MIT
+Apache License 2.0. See [LICENSE](LICENSE) for details.

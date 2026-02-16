@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pi-videoplayer"
 version = "0.1.0"
 description = "Distraction-free Raspberry Pi video player for children"
+license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 dependencies = [
     "evdev>=1.7.0",

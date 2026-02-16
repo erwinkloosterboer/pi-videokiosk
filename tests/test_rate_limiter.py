@@ -21,7 +21,14 @@ def temp_db():
 
 def test_rate_limit_allows_when_under_limit(temp_db):
     """Allow when under max."""
-    config = AppConfig(max_videos=3, period_hours=24.0, scanner_device_path=None, web_port=8080, debug_mode=False)
+    config = AppConfig(
+        max_videos=3,
+        period_hours=24.0,
+        scanner_device_path=None,
+        web_port=8080,
+        debug_mode=False,
+        display_connectors="",
+    )
     save_config(config, temp_db)
     with (
         patch("src.config.get_db_path", return_value=temp_db),
@@ -36,7 +43,14 @@ def test_rate_limit_allows_when_under_limit(temp_db):
 
 def test_rate_limit_rejects_when_over_limit(temp_db):
     """Reject when at or over max."""
-    config = AppConfig(max_videos=2, period_hours=24.0, scanner_device_path=None, web_port=8080, debug_mode=False)
+    config = AppConfig(
+        max_videos=2,
+        period_hours=24.0,
+        scanner_device_path=None,
+        web_port=8080,
+        debug_mode=False,
+        display_connectors="",
+    )
     save_config(config, temp_db)
     with (
         patch("src.config.get_db_path", return_value=temp_db),

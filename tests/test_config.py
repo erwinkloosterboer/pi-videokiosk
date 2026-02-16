@@ -30,6 +30,7 @@ def test_load_config_defaults(temp_db):
     assert config.max_videos == 3
     assert config.period_hours == 24.0
     assert config.scanner_device_path is None
+    assert config.display_connectors == ""
 
 
 def test_save_and_load_config(temp_db):
@@ -40,6 +41,7 @@ def test_save_and_load_config(temp_db):
         scanner_device_path="/dev/input/event0",
         web_port=9000,
         debug_mode=False,
+        display_connectors="0.HDMI-A-1,1.HDMI-A-2",
     )
     save_config(config, temp_db)
     loaded = load_config(temp_db)
@@ -47,6 +49,7 @@ def test_save_and_load_config(temp_db):
     assert loaded.period_hours == 12.0
     assert loaded.scanner_device_path == "/dev/input/event0"
     assert loaded.web_port == 9000
+    assert loaded.display_connectors == "0.HDMI-A-1,1.HDMI-A-2"
 
 
 def test_add_and_count_views(temp_db):
