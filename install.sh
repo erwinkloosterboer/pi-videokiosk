@@ -36,9 +36,10 @@ WorkingDirectory=$SCRIPT_DIR
 Environment=PATH=$SCRIPT_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=$USER_HOME/.Xauthority
+ExecStartPre=/bin/sleep 15
 ExecStart=$SCRIPT_DIR/venv/bin/python -m src
 Restart=on-failure
-RestartSec=5
+RestartSec=10
 
 [Install]
 WantedBy=graphical.target

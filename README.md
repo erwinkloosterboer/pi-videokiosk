@@ -119,6 +119,10 @@ pi-videoplayer/
 
 ## Troubleshooting
 
+**Service shows "inactive (dead)" after boot**
+
+The service waits 15 seconds for the display to be ready. If it still doesn't start, check logs: `journalctl -u pi-videoplayer -b` (logs from current boot). Try starting manually: `sudo systemctl start pi-videoplayer` — if that works, the issue is boot timing; consider increasing the delay in the service file.
+
 **Black screen doesn't appear; desktop keeps showing**
 
 The service needs X11 access. The install script sets `XAUTHORITY` in the systemd unit. If it still fails:
