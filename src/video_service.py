@@ -130,8 +130,8 @@ def play_video_with_mpv(
         if resp is None:
             logger.warning("Could not send loadfile to mpv on %s", sock)
             return False
-        if "error" in resp:
-            logger.warning("mpv loadfile error on %s: %s", sock, resp.get("error"))
+        if resp.get("error") != "success":
+            logger.warning("mpv loadfile error on %s: %s", sock, resp.get("error", "unknown"))
             return False
 
     # Wait for playback to finish on all (use first socket for polling)
