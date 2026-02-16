@@ -182,6 +182,11 @@ The Pi will boot to console, autologin to your user, then start X with only the 
 
 If you need to access the console for maintenance, press `Ctrl+Alt+F2` (or F3–F6) to switch to another TTY, then `Ctrl+Alt+F1` to return.
 
+**Black screen with blinking cursor?** You may be at a login prompt or shell. Try:
+- Log in if prompted (default user `pi`), then run `startx` manually
+- Check X errors: `cat ~/.xsession-errors`
+- Ensure "Console Autologin" is set (not "Desktop Autologin"): `sudo raspi-config` → Boot / Auto Login → Console Autologin
+
 ## Troubleshooting
 
 **Service shows "inactive (dead)" after boot**

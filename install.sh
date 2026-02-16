@@ -52,16 +52,19 @@ exec $WORK_DIR/venv/bin/python -m src
 XINITRC_EOF
     chmod +x "$USER_HOME/.xinitrc"
 
-    # Add startx to .bashrc if not already present
-    BASHRC_MARKER="# pi-videokiosk kiosk autostart"
-    if ! grep -q "$BASHRC_MARKER" "$USER_HOME/.bashrc" 2>/dev/null; then
-        cat >> "$USER_HOME/.bashrc" << 'BASHRC_EOF'
+    # Add startx to .profile (runs for login shells; .bashrc may not run on console login)
+    PROFILE_MARKER="# pi-videokiosk kiosk autostart"
+    PROFILE_FILE="$USER_HOME/.profile"
+    touch "$PROFILE_FILE"
+    if ! grep -q "$PROFILE_MARKER" "$PROFILE_FILE" 2>/dev/null; then
+        cat >> "$PROFILE_FILE" << 'PROFILE_EOF'
 
 # pi-videokiosk kiosk autostart
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
-  exec startx
+  sleep 2
+  exec startx -- -keeptty 2>"$HOME/.xsession-errors"
 fi
-BASHRC_EOF
+PROFILE_EOF
     fi
 
     echo ""
